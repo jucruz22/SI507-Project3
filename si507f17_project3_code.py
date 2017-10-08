@@ -13,65 +13,61 @@ import requests
 ######### PART 0 #########
 
 # Write your code for Part 0 here.
+gallery_data = requests.get("http://newmantaylor.com/gallery.html").text # creates response object
+soup = BeautifulSoup(gallery_data, 'html.parser') # creates soup HTML object
+images = soup.find("body").find_all("img") # list of HTML image objects
+# print (images) it worked!
+for i in images:
+    try:
+        print (i["alt"]) #print alt text
+    except:
+        print ("No alt text provided for this image!") # if no alt attribute
 
 
 ######### PART 1 #########
 
-# Get the main page data...
+# Get the main page data...try to get and cache main page data if not yet cached
+def get_from_cache(url,file_name):
+    try:
+        html = open(file_name,'r').read()
+    except:
+        html = requests.get(url).text # request object FIRST and use .text to convert it to a string
+        f = open(file_name,'w')
+        f.write(html)
+        f.close()
+    return html
+# creating soup object from cache step
+nps_gov_html = get_from_cache('https://www.nps.gov/index.htm','nps_gov_data.html')
+nps_soup = BeautifulSoup(nps_gov_html, 'html.parser')
+states_list = nps_soup.find("ul",{"class":"dropdown-menu SearchBar-keywordSearch"}).find_all("li")
+# print (states_list)
 
-# Try to get and cache main page data if not yet cached
-# Result of a following try/except block should be that
-# there exists a file nps_gov_data.html,
-# and the html text saved in it is stored in a variable 
-# that the rest of the program can access.
+# retrieving individual state URL's
+state_urls = ['https://www.nps.gov' + s.find('a')['href'] for s in states_list] # example str format: '/state/al/index.htm'
+# print (state_urls)
 
-# We've provided comments to guide you through the complex try/except, but if you prefer to build up the code to do this scraping and caching yourself, that is OK.
+# function to get individual state URL
+def get_state(state_code='mi',state_urls=state_urls):
+    for u in state_urls:
+        if state_code == u.split('/')[4]:
+            return (u)
+ar_url = get_state('ar')
+ca_url = get_state('ca')
+mi_url = get_state('mi')
 
+# print (ar_url) # success!
+# print (ca_url) # success!
+# print (mi_url) # success!
 
+#HTML cach + soup for three states
+ar_html = get_from_cache(ar_url,'arkansas_data.html')
+ar_soup = BeautifulSoup(ar_html, 'html.parser')
 
+ca_html = get_from_cache(ca_url,'california_data.html')
+ca_soup = BeautifulSoup(ca_html, 'html.parser')
 
-
-
-# Get individual states' data...
-
-# Result of a following try/except block should be that
-# there exist 3 files -- arkansas_data.html, california_data.html, michigan_data.html
-# and the HTML-formatted text stored in each one is available
-# in a variable or data structure 
-# that the rest of the program can access.
-
-# TRY: 
-# To open and read all 3 of the files
-
-# But if you can't, EXCEPT:
-
-# Create a BeautifulSoup instance of main page data 
-# Access the unordered list with the states' dropdown
-
-# Get a list of all the li (list elements) from the unordered list, using the BeautifulSoup find_all method
-
-# Use a list comprehension or accumulation to get all of the 'href' attributes of the 'a' tag objects in each li, instead of the full li objects
-
-# Filter the list of relative URLs you just got to include only the 3 you want: AR's, CA's, MI's, using the accumulator pattern & conditional statements
-
-
-# Create 3 URLs to access data from by appending those 3 href values to the main part of the NPS url. Save each URL in a variable.
-
-
-## To figure out what URLs you want to get data from (as if you weren't told initially)...
-# As seen if you debug on the actual site. e.g. Maine parks URL is "http://www.nps.gov/state/me/index.htm", Michigan's is "http://www.nps.gov/state/mi/index.htm" -- so if you compare that to the values in those href attributes you just got... how can you build the full URLs?
-
-
-# Finally, get the HTML data from each of these URLs, and save it in the variables you used in the try clause
-# (Make sure they're the same variables you used in the try clause! Otherwise, all this code will run every time you run the program!)
-
-
-# And then, write each set of data to a file so this won't have to run again.
-
-
-
-
-
+mi_html = get_from_cache(mi_url,'michigan_data.html')
+mi_soup = BeautifulSoup(mi_html, 'html.parser')
 
 
 ######### PART 2 #########
@@ -135,4 +131,3 @@ import requests
 ## Note that running this step for ALL your data make take a minute or few to run -- so it's a good idea to test any methods/functions you write with just a little bit of data, so running the program will take less time!
 
 ## Also remember that IF you have None values that may occur, you might run into some problems and have to debug for where you need to put in some None value / error handling!
-
