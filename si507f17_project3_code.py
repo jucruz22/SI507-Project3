@@ -36,6 +36,7 @@ def get_from_cache(url,file_name):
         f.write(html)
         f.close()
     return html
+
 # creating soup object from cache step
 nps_gov_html = get_from_cache('https://www.nps.gov/index.htm','nps_gov_data.html')
 nps_soup = BeautifulSoup(nps_gov_html, 'html.parser')
@@ -47,62 +48,104 @@ state_urls = ['https://www.nps.gov' + s.find('a')['href'] for s in states_list] 
 # print (state_urls)
 
 # function to get individual state URL
-def get_state(state_code='mi',state_urls=state_urls):
+def get_state_url(state_code='mi'):
     for u in state_urls:
         if state_code == u.split('/')[4]:
             return (u)
-ar_url = get_state('ar')
-ca_url = get_state('ca')
-mi_url = get_state('mi')
 
+ar_url = get_state_url('ar')
+ca_url = get_state_url('ca')
+mi_url = get_state_url('mi')
 # print (ar_url) # success!
 # print (ca_url) # success!
 # print (mi_url) # success!
 
 #HTML cach + soup for three states
-ar_html = get_from_cache(ar_url,'arkansas_data.html')
-ar_soup = BeautifulSoup(ar_html, 'html.parser')
+ar_html = get_from_cache(ar_url,'arkansas_data.html') # HTML string
+ar_soup = BeautifulSoup(ar_html, 'html.parser') # HTML soup object
 
-ca_html = get_from_cache(ca_url,'california_data.html')
-ca_soup = BeautifulSoup(ca_html, 'html.parser')
+ca_html = get_from_cache(ca_url,'california_data.html') # HTML string
+ca_soup = BeautifulSoup(ca_html, 'html.parser') # HTML soup object
 
-mi_html = get_from_cache(mi_url,'michigan_data.html')
-mi_soup = BeautifulSoup(mi_html, 'html.parser')
+mi_html = get_from_cache(mi_url,'michigan_data.html') # HTML string
+mi_soup = BeautifulSoup(mi_html, 'html.parser') # HTML soup object
 
 
 ######### PART 2 #########
 
 ## Before truly embarking on Part 2, we recommend you do a few things:
+def get_park_soup_list(state_soup):
+    soup_list = state_soup.find("ul",{"id":"list_parks"}).find_all("li",{"class":"clearfix"})
+    return (soup_list) # list HTML soup objects, each representing one "blurb" of a national park found on an individual state
 
-# - Create BeautifulSoup objects out of all the data you have access to in variables from Part 1
-# - Do some investigation on those BeautifulSoup objects. What data do you have about each state? How is it organized in HTML?
+def get_park_urls(state_soup):
+    parks_list = get_park_soup_list(state_soup)
+    park_urls = []
+    for p in parks_list:
+        park_repo = p.find('h3').find('a')['href'] # /arpo/
+        park_urls.append('https://www.nps.gov'+park_repo+'index.htm') # https://www.nps.gov/arpo/index.htm
+    return (park_urls) # list of parks/sites/memorial URLs within in each state page
 
-# HINT: remember the method .prettify() on a BeautifulSoup object -- might be useful for your investigation! So, of course, might be .find or .find_all, etc...
-
-# HINT: Remember that the data you saved is data that includes ALL of the parks/sites/etc in a certain state, but you want the class to represent just ONE park/site/monument/lakeshore.
-
-# We have provided, in sample_html_of_park.html an HTML file that represents the HTML about 1 park. However, your code should rely upon HTML data about Michigan, Arkansas, and Califoria you saved and accessed in Part 1.
-
-# However, to begin your investigation and begin to plan your class definition, you may want to open this file and create a BeautifulSoup instance of it to do investigation on.
-
-# Remember that there are things you'll have to be careful about listed in the instructions -- e.g. if no type of park/site/monument is listed in input, one of your instance variables should have a None value...
-
-
-
+# test functions using Arkansas state page
+ar_park_urls = get_park_urls(ar_soup) # list of AR park URLS
+# print (ar_park_urls)
+ar_park_soup_list = get_park_soup_list(ar_soup)
+# print (ar_park_soup_list)
+sample_ar_park = ar_park_soup_list[0]
+# print ('PRINTING SAMPLE AR PARK SOUP\n',sample_ar_park.prettify()) # HTML subjection object
 
 
 ## Define your class NationalSite here:
+class NationalSite(object):
+    def __init__(self,park_soup):
+        try:
+            self.location = park_soup.find('h4').text
+            self.name = park_soup.find('h3').find('a').text
+            self.type = park_soup.find('h2').text
+            self.description = park_soup.find('p').text.strip()
+            self.url = 'https://www.nps.gov'+park_soup.find('h3').find('a')['href']+'index.htm'
+        except:
+            self.location = None
+            self.name = None
+            self.type = None
+            self.description = ""
+            self.url = ""
 
+    def __str__(self):
+        return ('{} | {}'.format(self.name,self.location))
 
+    def __contains__(self,word):
+        return word in self.name
 
+    def get_mailing_address(self):
+        park_page = requests.get(self.url) # request this page from the internet
+        soup = BeautifulSoup(park_page.content,'html.parser') # make a soup object of whole HTML page
+        mailing = soup.find('div',{'class':'mailing-address'})
+        streetAddress = mailing.find('span',{'itemprop':'streetAddress'}).text.strip()
+        addressLocality = mailing.find('span',{'itemprop':'addressLocality'}).text.strip()
+        addressRegion = mailing.find('span',{'itemprop':'addressRegion'}).text.strip()
+        postalCode = mailing.find('span',{'itemprop':'postalCode'}).text.strip()
+        return ('{} / {} / {} / {}').format(streetAddress,addressLocality,addressRegion,postalCode)
 
-
+'''TESTING PROBLEM 2'''
 ## Recommendation: to test the class, at various points, uncomment the following code and invoke some of the methods / check out the instance variables of the test instance saved in the variable sample_inst:
 
-# f = open("sample_html_of_park.html",'r')
-# soup_park_inst = BeautifulSoup(f.read(), 'html.parser') # an example of 1 BeautifulSoup instance to pass into your class
-# sample_inst = NationalSite(soup_park_inst)
-# f.close()
+f = open("sample_html_of_park.html",'r')
+soup_park_inst = BeautifulSoup(f.read(), 'html.parser') # an example of 1 BeautifulSoup instance to pass into your class
+# print (soup_park_inst.prettify())
+sample_inst = NationalSite(soup_park_inst)
+sample_inst_2 = NationalSite(sample_ar_park)
+
+print (sample_inst) # Isle Royale | Houghton, MI
+print (sample_inst_2) # Arkansas Post | Gillett, AR
+
+print (sample_inst.url,'|',sample_inst_2.url)
+
+print ("Isle" in sample_inst.name)
+
+print (sample_inst.get_mailing_address()) # 800 East Lakeshore Drive / Houghton / MI / 49931
+print (sample_inst_2.get_mailing_address()) # 1741 Old Post Road / Gillett / AR / 72055
+f.close()
 
 
 ######### PART 3 #########
