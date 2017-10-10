@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import unittest
 import requests
+import csv
 
 #########
 ## Instr note: the outline comments will stay as suggestions, otherwise it's too difficult.
@@ -121,14 +122,17 @@ class NationalSite(object):
         park_page = requests.get(self.url) # request this page from the internet
         soup = BeautifulSoup(park_page.content,'html.parser') # make a soup object of whole HTML page
         mailing = soup.find('div',{'class':'mailing-address'})
-        streetAddress = mailing.find('span',{'itemprop':'streetAddress'}).text.strip()
-        addressLocality = mailing.find('span',{'itemprop':'addressLocality'}).text.strip()
-        addressRegion = mailing.find('span',{'itemprop':'addressRegion'}).text.strip()
-        postalCode = mailing.find('span',{'itemprop':'postalCode'}).text.strip()
+        try:
+            streetAddress = mailing.find('span',{'itemprop':'streetAddress'}).text.strip()
+            addressLocality = mailing.find('span',{'itemprop':'addressLocality'}).text.strip()
+            addressRegion = mailing.find('span',{'itemprop':'addressRegion'}).text.strip()
+            postalCode = mailing.find('span',{'itemprop':'postalCode'}).text.strip()
+        except:
+            streetAddress = ""
+            addressLocality = ""
+            addressRegion = ""
+            postalCode = ""
         return ('{} / {} / {} / {}').format(streetAddress,addressLocality,addressRegion,postalCode)
-
-    def csv_string(self):
-        return ("{},{},{},{},{}\n".format(self.name,self.location,self.type,self.get_mailing_address(),self.description))
 
 '''TESTING PROBLEM 2'''
 ## Recommendation: to test the class, at various points, uncomment the following code and invoke some of the methods / check out the instance variables of the test instance saved in the variable sample_inst:
@@ -174,19 +178,17 @@ michigan_natl_sites = [NationalSite(p) for p in get_park_soup_list(mi_soup)]
 
 
 ######### PART 4 #########
-def csv_headers(file_name):
-    f = open(file_name,"w")
-    f.write('Name,Location,Type,Address,Description\n')
-    f.close()
 
 def csv_content(file_name,list_name):
-    f = open(file_name,"a+")
-    for obj in list_name:
-        f.write(obj.csv_string())
-    f.close()
+    with open(file_name, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['Name','Location','Type','Address','Description'])
+        for obj in list_name:
+            writer.writerow([obj.name, obj.location, obj.type, obj.get_mailing_address(), obj.description])
 
-csv_headers("arkansas.csv")
 csv_content("arkansas.csv",arkansas_natl_sites)
+csv_content("california.csv",california_natl_sites)
+csv_content("michigan.csv",michigan_natl_sites)
 
 # csv_headers("california.csv")
 # csv_headers("michigan.csv")
