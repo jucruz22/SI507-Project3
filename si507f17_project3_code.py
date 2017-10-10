@@ -127,6 +127,9 @@ class NationalSite(object):
         postalCode = mailing.find('span',{'itemprop':'postalCode'}).text.strip()
         return ('{} / {} / {} / {}').format(streetAddress,addressLocality,addressRegion,postalCode)
 
+    def csv_string(self):
+        return ("{},{},{},{},{}\n".format(self.name,self.location,self.type,self.get_mailing_address(),self.description))
+
 '''TESTING PROBLEM 2'''
 ## Recommendation: to test the class, at various points, uncomment the following code and invoke some of the methods / check out the instance variables of the test instance saved in the variable sample_inst:
 
@@ -136,26 +139,30 @@ soup_park_inst = BeautifulSoup(f.read(), 'html.parser') # an example of 1 Beauti
 sample_inst = NationalSite(soup_park_inst)
 sample_inst_2 = NationalSite(sample_ar_park)
 
-print (sample_inst) # Isle Royale | Houghton, MI
-print (sample_inst_2) # Arkansas Post | Gillett, AR
+# print (sample_inst) # Isle Royale | Houghton, MI
+# print (sample_inst_2) # Arkansas Post | Gillett, AR
+#
+# print (sample_inst.url,'|',sample_inst_2.url)
+#
+# print ("Isle" in sample_inst.name)
+#
+# print (sample_inst.get_mailing_address()) # 800 East Lakeshore Drive / Houghton / MI / 49931
+# print (sample_inst_2.get_mailing_address()) # 1741 Old Post Road / Gillett / AR / 72055
 
-print (sample_inst.url,'|',sample_inst_2.url)
-
-print ("Isle" in sample_inst.name)
-
-print (sample_inst.get_mailing_address()) # 800 East Lakeshore Drive / Houghton / MI / 49931
-print (sample_inst_2.get_mailing_address()) # 1741 Old Post Road / Gillett / AR / 72055
-f.close()
+# print (sample_inst_2.csv_string())
+# f.close()
 
 
 ######### PART 3 #########
 
-# Create lists of NationalSite objects for each state's parks.
+# * Create a list of `NationalSite` objects from each one of these 3 states: Arkansas, California, and Michigan. They should be saved in the following variables, respectively:
 
-# HINT: Get a Python list of all the HTML BeautifulSoup instances that represent each park, for each state.
-
-
-
+arkansas_natl_sites = [NationalSite(p) for p in get_park_soup_list(ar_soup)]
+california_natl_sites = [NationalSite(p) for p in get_park_soup_list(ca_soup)]
+michigan_natl_sites = [NationalSite(p) for p in get_park_soup_list(mi_soup)]
+# print (arkansas_natl_sites) # list of National Park instances!
+# print (california_natl_sites) # list of National Park instances!
+# print (michigan_natl_sites) # list of National Park instances!
 
 ##Code to help you test these out:
 # for p in california_natl_sites:
@@ -166,8 +173,37 @@ f.close()
 # 	print(m)
 
 
-
 ######### PART 4 #########
+def csv_headers(file_name):
+    f = open(file_name,"w")
+    f.write('Name,Location,Type,Address,Description\n')
+    f.close()
+
+def csv_content(file_name,list_name):
+    f = open(file_name,"a+")
+    for obj in list_name:
+        f.write(obj.csv_string())
+    f.close()
+
+csv_headers("arkansas.csv")
+csv_content("arkansas.csv",arkansas_natl_sites)
+
+# csv_headers("california.csv")
+# csv_headers("michigan.csv")
+
+
+
+# * Write 3 CSV files, `arkansas.csv`, `california.csv`, `michigan.csv` -- one for each state's national parks/sites/etc, each of which has 5 columns:
+#
+# 	* Name
+# 	* Location
+# 	* Type
+# 	* Address
+# 	* Description
+#
+# Remember to handle e.g commas and multi-line strings so that data for 1 field all ends up inside 1 spreadsheet cell when you open the CSV!
+#
+# For any park/site/monument/etc where a value is `None`, you should put the string `"None"` in the CSV file.
 
 ## Remember the hints / things you learned from Project 2 about writing CSV files from lists of objects!
 
